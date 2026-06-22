@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: typeahead
+  datasource:
+    url: jdbc:postgresql://localhost:5432/typeahead
+    username: typeahead
+    password: typeahead123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# Application custom config
+typeahead:
+  cache:
+    node-count: 3
+    virtual-nodes: 150
+    ttl-seconds: 60
+  batch:
+    flush-interval-ms: 5000
+    max-buffer-size: 100
+  trending:
+    decay-rate: 0.1
+    window-hours: 24
+    decay-job-interval-ms: 900000
+    historical-weight: 0.3
+    recent-weight: 0.7
+
+logging:
+  level:
+    com.typeahead: INFO
+    com.typeahead.cache: DEBUG
+    com.typeahead.service: DEBUG
