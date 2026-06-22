@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
 
 export default function CacheDebugPanel({ lastPrefix, forceOpen }) {
   const [isOpen, setIsOpen] = useState(false);

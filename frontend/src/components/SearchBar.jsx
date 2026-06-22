@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import SuggestionDropdown from './SuggestionDropdown';
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
 
 export default function SearchBar({ onSearchResponse, onQueryChange }) {
   const [query, setQuery] = useState('');
