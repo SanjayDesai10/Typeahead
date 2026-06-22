@@ -9,7 +9,7 @@ Frontend (React + Vite :5173)
     ↕ REST API
 Backend (Spring Boot :8080)
     ├── Consistent Hash Ring → Redis (3 logical nodes: DB 0, 1, 2)
-    ├── Batch Writer → PostgreSQL (105K+ queries)
+    ├── Batch Writer → PostgreSQL (491K+ queries)
     └── Trending Engine (exponential decay, 24h window)
 ```
 
@@ -19,7 +19,7 @@ Backend (Spring Boot :8080)
 |-----------|-----------|---------|
 | **Frontend** | React + Vite | Search UI, suggestion dropdown, trending chips, metrics dashboard |
 | **Backend** | Spring Boot 3 (Java 17+) | REST APIs, business logic, scheduling |
-| **Primary DB** | PostgreSQL 16 | Persistent storage for 105K+ queries |
+| **Primary DB** | PostgreSQL 16 | Persistent storage for 491K+ queries |
 | **Cache** | Redis 7 (3 logical databases) | Distributed suggestion cache with consistent hashing |
 
 ## 📸 Screenshots
@@ -51,7 +51,7 @@ This starts PostgreSQL (port 5432) and Redis (port 6379).
 cd backend
 ./mvnw spring-boot:run
 ```
-On first startup, the system automatically seeds **105,000 queries** across 5 categories (electronics, programming, general, shopping, how-to).
+On first startup, the system automatically seeds **491,063 queries** across 5 categories (electronics, programming, general, shopping, how-to).
 
 ### 3. Start Frontend
 ```bash
@@ -119,7 +119,8 @@ Open http://localhost:5173
 - **Window**: 24-hour sliding window with 1-hour time buckets
 - **Why this avoids permanent over-ranking**: Queries that were popular 12+ hours ago contribute negligibly due to exponential decay. The 24h window provides a hard cutoff.
 - **Cache invalidation**: When trending scores change, affected cache entries are invalidated.
-- **Scheduled job**: Runs every 15 minutes to recalculate scores and clean expired buckets.
+- **Scheduled job**: Runs every 15 minutes to clean expired buckets.
+- **Immediate updates**: Query trending scores are calculated and saved in the database **instantly** during the batch write flush (every 5 seconds) to reflect user searches immediately.
 
 ### 3. Batch Writes
 - **Buffer**: `ConcurrentHashMap<String, AtomicLong>` aggregating duplicate queries.
@@ -129,7 +130,11 @@ Open http://localhost:5173
   - Accept the trade-off (minor count inaccuracies in a demo).
   - In production: WAL to disk before acknowledging, or a durable message queue.
 
-### 4. Frontend Debouncing
+### 4. Zero-Entry Cache Invalidation (Negative Cache Misses)
+- **Negative Caching**: Cache empty search results (`[]`) to prevent database hits for queries with no matches.
+- **Real-time update logic**: If a cached result has 0 entries, we treat it as a Cache **MISS** in metrics and the UI debug panel. We fall back to the database to check if new results have been written since it was cached, and then update the Redis entry. This ensures that new submissions matching previously empty prefixes show up instantly while keeping database reads extremely low.
+
+### 5. Frontend Debouncing
 - 300ms debounce on search input to avoid excessive API calls.
 - Keyboard navigation (↑↓ Enter Escape) for accessibility.
 - Auto-refresh trending searches every 30 seconds.
@@ -138,7 +143,7 @@ Open http://localhost:5173
 
 | Metric | Value |
 |--------|-------|
-| Dataset size | 105,000 queries |
+| Dataset size | 491,063 queries |
 | Seed time | ~13 seconds |
 | Avg suggestion latency (cached) | < 2ms |
 | Avg suggestion latency (uncached) | ~20ms |
@@ -185,5 +190,5 @@ HLD/
 - [x] **Keyboard navigation** — ↑↓ Enter Escape support
 - [x] **Cache debug API** — Shows hash routing, hit/miss, per-node stats
 - [x] **Metrics API** — p50/p95/p99 latency, cache hit rate, write reduction
-- [x] **105K+ query dataset** — Synthetic data with Zipf distribution
+- [x] **491K+ query dataset** — Synthetic data with Zipf distribution
 - [x] **Polished UI** — Dark glassmorphism theme with micro-animations
