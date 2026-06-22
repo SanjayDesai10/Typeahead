@@ -93,6 +93,8 @@ public class BatchWriterService {
 
             query.setCount(query.getCount() + additionalCount);
             query.setLastSearchedAt(LocalDateTime.now());
+            double trendingScore = trendingService.computeTrendingScore(queryText, query.getCount());
+            query.setTrendingScore(trendingScore);
             queryRepository.save(query);
             cacheManager.invalidateForQuery(queryText);
         }

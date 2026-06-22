@@ -69,12 +69,18 @@ public class CacheManager {
         String cached = template.opsForValue().get(cacheKey);
 
         if (cached != null) {
-            hitCounters.get(nodeId).incrementAndGet();
-            log.debug("Cache HIT for prefix '{}' on node '{}'", prefix, nodeId);
             try {
                 List<SuggestionResponse.SuggestionItem> items =
                         objectMapper.readValue(cached, new TypeReference<>() {});
-                return new CacheResult(items, true, nodeId);
+                boolean isRealHit = items != null && !items.isEmpty();
+                if (isRealHit) {
+                    hitCounters.get(nodeId).incrementAndGet();
+                    log.debug("Cache HIT for prefix '{}' on node '{}'", prefix, nodeId);
+                } else {
+                    missCounters.get(nodeId).incrementAndGet();
+                    log.debug("Cache MISS (empty cached entries) for prefix '{}' on node '{}'", prefix, nodeId);
+                }
+                return new CacheResult(items, isRealHit, nodeId);
             } catch (JsonProcessingException e) {
                 log.error("Failed to deserialize cached value for prefix: {}", prefix, e);
                 return null;
@@ -122,20 +128,21 @@ public class CacheManager {
     }
 
     public CacheDebugResponse getDebugInfo(String prefix) {
-        ConsistentHashRing.DebugInfo debugInfo = hashRing.getDebugInfo(prefix);
+        String normalizedPrefix = prefix == null ? "" : prefix.trim().toLowerCase();
+        ConsistentHashRing.DebugInfo debugInfo = hashRing.getDebugInfo(normalizedPrefix);
         String nodeId = debugInfo.assignedNode();
         StringRedisTemplate template = redisTemplates.get(nodeId);
 
         boolean cacheHit = false;
         int cachedEntries = 0;
         if (template != null) {
-            String cacheKey = "suggest:" + prefix.toLowerCase();
+            String cacheKey = "suggest:" + normalizedPrefix;
             String cached = template.opsForValue().get(cacheKey);
             if (cached != null) {
-                cacheHit = true;
                 try {
                     List<?> items = objectMapper.readValue(cached, List.class);
                     cachedEntries = items.size();
+                    cacheHit = cachedEntries > 0;
                 } catch (JsonProcessingException e) { /* ignore */ }
             }
         }
@@ -162,7 +169,7 @@ public class CacheManager {
         }
 
         return CacheDebugResponse.builder()
-                .prefix(prefix).hashValue(debugInfo.hashValue())
+                .prefix(normalizedPrefix).hashValue(debugInfo.hashValue())
                 .assignedNode(debugInfo.assignedNode())
                 .ringPosition(debugInfo.ringPosition())
                 .cacheHit(cacheHit).cachedEntries(cachedEntries)

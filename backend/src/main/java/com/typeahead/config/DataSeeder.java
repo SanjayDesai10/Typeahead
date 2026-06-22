@@ -109,8 +109,8 @@ public class DataSeeder {
                         continue;
                     }
 
-                    // Generate random dates & trending score mimicking the original synthetic behavior
-                    double trendingScore = qCount * (0.3 + random.nextDouble() * 0.7);
+                    // Seeded queries start with 0.0 trending score so that the trending page reflects actual search activity
+                    double trendingScore = 0.0;
                     LocalDateTime lastSearchedAt = LocalDateTime.now().minusHours(random.nextInt(48));
                     LocalDateTime createdAt = LocalDateTime.now().minusDays(random.nextInt(90));
 
