@@ -78,6 +78,11 @@ class BatchWriterServiceTest {
             recordCount++;
             lastRecordedQuery = queryText;
         }
+
+        @Override
+        public double computeTrendingScore(String queryText, long allTimeCount) {
+            return 0.0;
+        }
     }
 
     @BeforeEach

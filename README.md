@@ -22,6 +22,17 @@ Backend (Spring Boot :8080)
 | **Primary DB** | PostgreSQL 16 | Persistent storage for 105K+ queries |
 | **Cache** | Redis 7 (3 logical databases) | Distributed suggestion cache with consistent hashing |
 
+## 📸 Screenshots
+
+### 1. Main Search & Typeahead Suggestions
+![Search Suggestions](screenshots/normal.png)
+
+### 2. Cache Routing & Debug Panel (Consistent Hashing)
+![Cache Debug Panel](screenshots/search.png)
+
+### 3. System Metrics Dashboard
+![System Metrics](screenshots/miss.png)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
